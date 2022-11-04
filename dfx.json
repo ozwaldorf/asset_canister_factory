@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "dfx": "0.11.2",
+  "canisters": {
+    "factory": {
+      "candid": "candid.did",
+      "package": "certified_asset_factory",
+      "type": "rust"
+    }
+  }
+}

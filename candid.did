@@ -1,0 +1,8 @@
+type Result = variant { Ok; Err : text };
+type Result_1 = variant { Ok : principal; Err : text };
+service : () -> {
+  add_user : (principal) -> (Result);
+  del_user : (principal) -> (Result);
+  deploy : () -> (Result_1);
+  upgrade : (principal) -> (Result);
+}
