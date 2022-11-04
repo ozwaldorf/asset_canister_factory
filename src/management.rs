@@ -1,17 +1,32 @@
-use ic_kit::candid::{Nat, utils::{ArgumentDecoder, ArgumentEncoder}, Deserialize};
-use ic_kit::{CandidType, ic, Principal};
-use ic_kit::ic::CallBuilder;
+use async_trait::async_trait;
+use ic_kit::ic::CallError;
+use ic_kit::prelude::*;
 
 /// A method description.
+#[async_trait(?Send)]
 pub trait ManagementMethod {
     const NAME: &'static str;
-    type Arguments: ArgumentEncoder;
-    type Response: for<'de> ArgumentDecoder<'de>;
+    type Argument: CandidType;
+    type Response: for<'de> candid::Deserialize<'de> + CandidType;
 
     #[inline]
-    fn build(args: Self::Arguments) -> CallBuilder {
+    async fn call(arg: Self::Argument) -> Result<Self::Response, CallError> {
         ic::CallBuilder::new(Principal::management_canister(), Self::NAME)
-            .with_args(args)
+            .with_arg(arg)
+            .perform_one()
+            .await
+    }
+
+    #[inline]
+    async fn call_with_payment(
+        arg: Self::Argument,
+        cycles: u64,
+    ) -> Result<Self::Response, CallError> {
+        ic::CallBuilder::new(Principal::management_canister(), Self::NAME)
+            .with_arg(arg)
+            .with_payment(cycles)
+            .perform_one()
+            .await
     }
 }
 
@@ -46,8 +61,8 @@ pub struct CreateCanisterArgument {
 
 impl ManagementMethod for CreateCanister {
     const NAME: &'static str = "create_canister";
-    type Arguments = (CreateCanisterArgument,);
-    type Response = (WithCanisterId,);
+    type Argument = CreateCanisterArgument;
+    type Response = WithCanisterId;
 }
 
 /// Update the settings of a canister.
@@ -61,7 +76,7 @@ pub struct UpdateSettingsArgument {
 
 impl ManagementMethod for UpdateSettings {
     const NAME: &'static str = "update_settings";
-    type Arguments = (UpdateSettingsArgument,);
+    type Argument = UpdateSettingsArgument;
     type Response = ();
 }
 
@@ -89,7 +104,7 @@ pub struct InstallCodeArgument {
 
 impl ManagementMethod for InstallCode {
     const NAME: &'static str = "install_code";
-    type Arguments = (InstallCodeArgument,);
+    type Argument = InstallCodeArgument;
     type Response = ();
 }
 
@@ -98,7 +113,7 @@ pub struct UninstallCode;
 
 impl ManagementMethod for UninstallCode {
     const NAME: &'static str = "uninstall_code";
-    type Arguments = (WithCanisterId,);
+    type Argument = WithCanisterId;
     type Response = ();
 }
 
@@ -107,7 +122,7 @@ pub struct StartCanister;
 
 impl ManagementMethod for StartCanister {
     const NAME: &'static str = "start_canister";
-    type Arguments = (WithCanisterId,);
+    type Argument = WithCanisterId;
     type Response = ();
 }
 
@@ -116,7 +131,7 @@ pub struct StopCanister;
 
 impl ManagementMethod for StopCanister {
     const NAME: &'static str = "stop_canister";
-    type Arguments = (WithCanisterId,);
+    type Argument = WithCanisterId;
     type Response = ();
 }
 
@@ -144,7 +159,7 @@ pub struct CanisterStatusResponse {
 
 impl ManagementMethod for CanisterStatus {
     const NAME: &'static str = "canister_status";
-    type Arguments = (WithCanisterId,);
+    type Argument = WithCanisterId;
     type Response = (CanisterStatusResponse,);
 }
 
@@ -153,7 +168,7 @@ pub struct DeleteCanister;
 
 impl ManagementMethod for DeleteCanister {
     const NAME: &'static str = "delete_canister";
-    type Arguments = (WithCanisterId,);
+    type Argument = WithCanisterId;
     type Response = ();
 }
 
@@ -162,7 +177,7 @@ pub struct DepositCycles;
 
 impl ManagementMethod for DepositCycles {
     const NAME: &'static str = "deposit_cycles";
-    type Arguments = (WithCanisterId,);
+    type Argument = WithCanisterId;
     type Response = ();
 }
 
@@ -171,6 +186,6 @@ pub struct RawRand;
 
 impl ManagementMethod for RawRand {
     const NAME: &'static str = "raw_rand";
-    type Arguments = ();
+    type Argument = ();
     type Response = (Vec<u8>,);
 }

@@ -1,6 +1,5 @@
 use crate::management::{
     CanisterSettings, CreateCanisterArgument, InstallCodeArgument, InstallMode, ManagementMethod,
-    WithCanisterId,
 };
 use ic_kit::prelude::*;
 mod management;
@@ -55,9 +54,7 @@ async fn deploy() -> Result<Principal, String> {
             ..CanisterSettings::default()
         }),
     };
-    let id = management::CreateCanister::build((spawn_args,))
-        .with_payment(4_000_000_000_000)
-        .perform_one::<WithCanisterId>()
+    let id = management::CreateCanister::call_with_payment(spawn_args, 4_000_000_000_000)
         .await
         .map_err(|e| format!("Failed to reserve canister id: {}", e))?
         .canister_id;
@@ -68,8 +65,7 @@ async fn deploy() -> Result<Principal, String> {
         arg: Vec::new(),
         mode: InstallMode::Install,
     };
-    management::InstallCode::build((install_args,))
-        .perform_one::<()>()
+    management::InstallCode::call(install_args)
         .await
         .map_err(|e| format!("Failed to install code: {}", e))?;
 
@@ -91,12 +87,10 @@ async fn upgrade(id: Principal) -> Result<(), String> {
         arg: Vec::new(),
         mode: InstallMode::Upgrade,
     };
-    management::InstallCode::build((install_args,))
-        .perform_one::<()>()
-        .await
-        .map_err(|e| format!("Failed to install code: {}", e))?;
 
-    Ok(())
+    management::InstallCode::call(install_args)
+        .await
+        .map_err(|e| format!("Failed to install code: {}", e))
 }
 
 #[pre_upgrade]
